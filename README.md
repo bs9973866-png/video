@@ -15,4 +15,4 @@ npx remotion browser ensure
 npm run render
 ```
 
-Готовое видео: `out/last-message.mp4`. GitHub Actions собирает MP4 при обновлении main.
+Готовое видео: `out/last-message.mp4`. GitHub Actions собирает MP4 при обновлении main. После изменений длительность дорожки проверяется через ffprobe.
