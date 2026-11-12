@@ -19,9 +19,11 @@ jobs:
           python-version: '3.11'
       - name: Install audio tools
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
-      - name: Install neural multi-voice TTS
-        run: pip install edge-tts pydub
-      - name: Generate Russian narrator and character dialogue
+      - name: Install local neural TTS dependencies
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install omegaconf soundfile pydub
+      - name: Generate Russian dialogue with Silero neural voices
         run: python scripts/generate_voice.py
       - name: Install dependencies
         run: npm install
