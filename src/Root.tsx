@@ -6,7 +6,7 @@ export const Root: React.FC = () => (
   <Composition
     id="NoInternet"
     component={NoInternetVideo}
-    durationInFrames={4500}
+    durationInFrames={6300}
     fps={30}
     width={1920}
     height={1080}
