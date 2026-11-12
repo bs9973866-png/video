@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill,Audio,interpolate,staticFile,useCurrentFrame} from 'remotion';
 
-type Action='idle'|'walk'|'run'|'talk'|'point'|'phone'|'surprised'|'wave'|'sit'|'carry'|'look'|'cheer';
+type Action='idle'|'walk'|'run'|'talk'|'point'|'phone'|'surprised'|'wave'|'sit'|'carry'|'look'|'cheer'|'write'|'listen'|'read'|'smile';
 type Scene={title:string;sub:string;place:string;time:'day'|'dusk'|'night';caption:string;action:Action;friend:Action;third?:Action;focus:string};
 const scenes:Scene[]=[
 {title:'МИР НА ОДНОМ ЭКРАНЕ',sub:'Утро Макса начиналось с десятков уведомлений',place:'room',time:'day',caption:'Сначала казалось, что весь мир помещается в телефоне.',action:'phone',friend:'idle',focus:'phone'},
@@ -56,9 +56,9 @@ const Character:React.FC<{x:number;y:number;name:string;color:string;action:Acti
  const bounce=moving?Math.abs(Math.sin(t*speed))* (action==='run'?13:7):Math.sin(t*.09)*2.2;
  const lean=action==='run'?10:action==='walk'?4:action==='look'?-4:0;
  const blink=(Math.sin(t*.031+seed)*.5+.5)>.985;
- const phone=action==='phone',point=action==='point',wave=action==='wave'||action==='cheer',talk=action==='talk';
- const armL=wave?[-42,-205]:phone?[-42,-112]:point?[-90,-150]:talk?[-74,-150]:[-46,-100];
- const armR=wave?[58,-220]:phone?[45,-150]:point?[88,-155]:talk?[72,-176]:[46,-100];
+ const phone=action==='phone',point=action==='point',wave=action==='wave'||action==='cheer',talk=action==='talk',write=action==='write',read=action==='read';
+ const armL=wave?[-42,-205]:phone?[-42,-112]:point?[-90,-150]:write?[-28,-95]:read?[-55,-105]:talk?[-74,-150]:[-46,-100];
+ const armR=wave?[58,-220]:phone?[45,-150]:point?[88,-155]:write?[34,-100]:read?[55,-105]:talk?[72,-176]:[46,-100];
  const legA=moving?Math.sin(t*speed)*27:Math.sin(t*.07)*2;
  const legB=moving?-Math.sin(t*speed)*25:Math.sin(t*.07+1)*2;
  const torsoY=-137+bounce;
@@ -70,18 +70,18 @@ const Character:React.FC<{x:number;y:number;name:string;color:string;action:Acti
    <path d="M-25 -131 Q-42 -120 -38 -69 Q0 -51 38 -69 Q42 -119 25 -131Z" fill={color} stroke="#171923" strokeWidth="6"/>
    <path d="M-18 -121 Q0 -108 18 -121" stroke="#ffffff" strokeOpacity=".25" strokeWidth="4" fill="none"/>
    <path d="M-12 -62 L-12 -20 M12 -62 L12 -20" stroke="#111722" strokeWidth="5" opacity=".55"/>
-   <path d="M-29 -119 Q-50 -113 '+armL[0]+' '+armL[1]+'" stroke="#171923" strokeWidth="17" fill="none" strokeLinecap="round"/>
-   <path d="M'+armL[0]+' '+armL[1]+' Q'+(armL[0]-4)+' '+(armL[1]+22)+' '+(armL[0]+(phone?5:-7))+' '+(armL[1]+42)+'" stroke="#171923" strokeWidth="15" fill="none" strokeLinecap="round"/>
+   <path d={'M-29 -119 Q-50 -113 '+armL[0]+' '+armL[1]} stroke="#171923" strokeWidth="17" fill="none" strokeLinecap="round"/>
+   <path d={'M'+armL[0]+' '+armL[1]+' Q'+(armL[0]-4)+' '+(armL[1]+22)+' '+(armL[0]+(phone?5:-7))+' '+(armL[1]+42)} stroke="#171923" strokeWidth="15" fill="none" strokeLinecap="round"/>
    <circle cx={armL[0]+(phone?5:-7)} cy={armL[1]+42} r="9" fill="#e9b99d" stroke="#171923" strokeWidth="3"/>
-   <path d="M29 -119 Q50 -113 '+armR[0]+' '+armR[1]+'" stroke="#171923" strokeWidth="17" fill="none" strokeLinecap="round"/>
-   <path d="M'+armR[0]+' '+armR[1]+' Q'+(armR[0]+8)+' '+(armR[1]+23)+' '+(armR[0]+(wave?10:0))+' '+(armR[1]+43)+'" stroke="#171923" strokeWidth="15" fill="none" strokeLinecap="round"/>
+   <path d={'M29 -119 Q50 -113 '+armR[0]+' '+armR[1]} stroke="#171923" strokeWidth="17" fill="none" strokeLinecap="round"/>
+   <path d={'M'+armR[0]+' '+armR[1]+' Q'+(armR[0]+8)+' '+(armR[1]+23)+' '+(armR[0]+(wave?10:0))+' '+(armR[1]+43)} stroke="#171923" strokeWidth="15" fill="none" strokeLinecap="round"/>
    <circle cx={armR[0]+(wave?10:0)} cy={armR[1]+43} r="9" fill="#e9b99d" stroke="#171923" strokeWidth="3"/>
    <path d={'M-15 -6 Q-23 15 '+(-19+legA)+' 39 L'+(-22+legA)+' 70'} stroke="#171923" strokeWidth="19" fill="none" strokeLinecap="round"/>
    <path d={'M15 -6 Q23 15 '+(19+legB)+' 39 L'+(22+legB)+' 70'} stroke="#171923" strokeWidth="19" fill="none" strokeLinecap="round"/>
    <path d={'M'+(-22+legA)+' 70 q-12 4 -10 15 q16 7 35 0 l-3 -9'} fill="#f4f1e9" stroke="#171923" strokeWidth="5" strokeLinejoin="round"/>
    <path d={'M'+(22+legB)+' 70 q-12 4 -10 15 q16 7 35 0 l-3 -9'} fill="#f4f1e9" stroke="#171923" strokeWidth="5" strokeLinejoin="round"/>
    <path d="M-38 -210 Q-48 -251 -8 -251 Q35 -257 39 -215 L31 -197 Q0 -221 -31 -197Z" fill="#171923"/>
-   <ellipse cx="0" cy={headY+137-bounce} rx="39" ry="43" fill="#f1c9ac" stroke="#171923" strokeWidth="6"/>
+   <ellipse cx="0" cy="-202" rx="39" ry="43" fill="#f1c9ac" stroke="#171923" strokeWidth="6"/>
    <path d="M-37 -210 Q-32 -246 0 -247 Q31 -244 38 -211 Q16 -226 -2 -225 Q-21 -221 -37 -210" fill="#171923"/>
    <path d="M-23 -216 Q-9 -225 0 -216 M8 -216 Q20 -224 28 -215" stroke="#171923" strokeWidth="5" fill="none" strokeLinecap="round"/>
    {blink?<path d="M-20 -202 h11 M10 -202 h11" stroke="#171923" strokeWidth="4" strokeLinecap="round"/>:<><ellipse cx="-15" cy="-202" rx="4.5" ry="7" fill="#171923"/><ellipse cx="15" cy="-202" rx="4.5" ry="7" fill="#171923"/></>}
