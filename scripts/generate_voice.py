@@ -20,7 +20,7 @@ subprocess.run(['piper','--model',str(model),'--config',str(config),'--output_fi
 # The tempo compensation keeps the narration duration close to the original.
 subprocess.run([
     'ffmpeg','-y','-i',str(raw),'-af',
-    'asetrate=22050*0.93,aresample=22050,atempo=1.0752688,'
+    'asetrate=22050*0.92,aresample=22050,atempo=0.97,'
     'equalizer=f=115:t=q:w=1:g=3.5,equalizer=f=260:t=q:w=1:g=1.5,'
     'acompressor=threshold=-19dB:ratio=2.2:attack=12:release=100,alimiter=limit=0.95',
     '-ar','22050',str(final)
