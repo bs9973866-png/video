@@ -27,7 +27,7 @@ jobs:
         run: npm install
       - name: Ensure browser
         run: npx remotion browser ensure
-      - name: Render 3-minute detailed animation
+      - name: Render full eight-minute animated film
         run: npm run render
       - name: Verify output
         run: ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate -of json out/last-message.mp4
