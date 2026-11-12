@@ -19,7 +19,7 @@ async def main():
         pitch="+0Hz",
     )
     await voice.save(str(OUTPUT))
-    print(f"Voiceover created: {OUTPUT}")
+    print(f"Russian narration generated successfully: {OUTPUT}")
 
 if __name__ == "__main__":
     asyncio.run(main())
