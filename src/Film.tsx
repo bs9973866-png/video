@@ -199,12 +199,13 @@ export const Film:React.FC=()=>{
  const local=f-idx*framesPerScene,s=scenes[idx];
  const enter=smooth(local/18),exit=1-smooth((local-(framesPerScene-14))/14);
  const cameraX=Math.sin((local/framesPerScene)*Math.PI*2+idx)*10, cameraY=Math.sin((local/framesPerScene)*Math.PI+idx*.7)*5;
- const positions=idx<4?[{x:650+Math.sin(f*.04)*15,name:'ТЫ',color:'#4f8ec7',action:s.action as Action},{x:1190,name:'ЛЁША',color:'#d27d50',action:s.friend as Action}]:idx<16?[{x:620+Math.sin(f*.03)*18,name:'ТЫ',color:'#4f8ec7',action:s.action as Action},{x:1260,name:'ГОРОЖАНИН',color:'#8d9c72',action:s.friend as Action}]:[{x:390+Math.sin(f*.03)*12,name:'ТЫ',color:'#4f8ec7',action:s.action as Action},{x:790+Math.sin(f*.025+1)*10,name:'ЛЁША',color:'#d27d50',action:s.friend as Action},{x:1190+Math.sin(f*.028+2)*12,name:'МИРА',color:'#986cba',action:(s.third||'idle') as Action},...(idx>=30?[{x:1580+Math.sin(f*.022+3)*9,name:'ДАНЯ',color:'#4f9c91',action:'listen' as Action}]:[])];
+ const cameraZoom=['phone','radio','repair','screen'].includes(s.focus)?1.075:(s.focus==='final'?.97:1.025);
+ const positions=idx<12?[{x:650+Math.sin(f*.04)*15,name:'ТЫ',color:'#4f8ec7',action:s.action as Action},{x:1190,name:'ГОРОЖАНИН',color:'#8d9c72',action:s.friend as Action}]:idx<30?[{x:360+Math.sin(f*.03)*12,name:'ТЫ',color:'#4f8ec7',action:s.action as Action},{x:900+Math.sin(f*.025+1)*10,name:'ЛЁША',color:'#d27d50',action:s.friend as Action},{x:1450+Math.sin(f*.028+2)*12,name:'МИРА',color:'#986cba',action:(s.third||'talk') as Action}]:[{x:270+Math.sin(f*.03)*12,name:'ТЫ',color:'#4f8ec7',action:s.action as Action},{x:720+Math.sin(f*.025+1)*10,name:'ЛЁША',color:'#d27d50',action:s.friend as Action},{x:1180+Math.sin(f*.028+2)*12,name:'МИРА',color:'#986cba',action:(s.third||'talk') as Action},{x:1630+Math.sin(f*.022+3)*9,name:'ДАНЯ',color:'#4f9c91',action:'listen' as Action}];
  return <AbsoluteFill style={{background:'#111827',fontFamily:'Arial, sans-serif'}}>
   <svg viewBox="0 0 1920 1080" width="100%" height="100%">
-   <g transform={'translate('+cameraX+' '+cameraY+') scale(1.012)'}>
+   <g transform={'translate(960 540) scale('+cameraZoom+') translate(-960 '+(-540)+') translate('+cameraX+' '+cameraY+')'}>
     <Backdrop scene={s} idx={idx}/><Props scene={s} idx={idx}/>
-    {positions.map((p,i)=><Character key={p.name} x={p.x+(i===0?interpolate(local,[0,framesPerScene],[40,-10]):i===1?interpolate(local,[0,framesPerScene],[-25,15]):0)} y={880} name={p.name} color={p.color} action={p.action} seed={i+idx*3} scale={i===2?.94:1}/>)}
+    {positions.map((p,i)=><Character key={p.name} x={p.x+(i===0?interpolate(local,[0,framesPerScene],[40,-10]):i===1?interpolate(local,[0,framesPerScene],[-25,15]):0)} y={880} name={p.name} color={p.color} action={p.action} seed={i+idx*3} scale={1.04}/>)}
     <Dust idx={idx}/>
    </g>
    <rect width="1920" height="1080" fill="#07111e" opacity={1-enter}/>
@@ -218,6 +219,6 @@ export const Film:React.FC=()=>{
    <div style={{maxWidth:1460,padding:'22px 38px',borderRadius:18,background:'rgba(8,14,25,.88)',border:'1px solid rgba(255,255,255,.24)',boxShadow:'0 14px 40px rgba(0,0,0,.28)',color:'#fff',fontSize:30,fontWeight:700,textAlign:'center',lineHeight:1.25,opacity:interpolate(local,[0,10,132,149],[0,1,1,0],{extrapolateLeft:'clamp',extrapolateRight:'clamp'})}}>{s.caption}</div>
   </div>
   <div style={{position:'absolute',bottom:22,left:80,right:80,height:5,background:'rgba(255,255,255,.2)',borderRadius:8}}><div style={{height:5,width:((idx+local/framesPerScene)/scenes.length*100)+'%',background:'#f3d58b',borderRadius:8}}/></div>
-  <Audio src={staticFile('audio/narration.wav')} volume={0.98}/>
+  <Audio src={staticFile('audio/narration.wav')} volume={0.94}/>
  </AbsoluteFill>;
 };
