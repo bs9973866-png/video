@@ -1,25 +1,22 @@
 from pathlib import Path
-import asyncio
-import edge_tts
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 TEXT = ROOT / "public" / "audio" / "narration.txt"
-OUTPUT = ROOT / "public" / "audio" / "narration.mp3"
+OUTPUT = ROOT / "public" / "audio" / "narration.wav"
 
-async def main():
+def main():
     text = TEXT.read_text(encoding="utf-8").strip()
     if not text:
         raise SystemExit("Narration text is empty")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    voice = edge_tts.Communicate(
-        text,
-        voice="ru-RU-DmitryNeural",
-        rate="-8%",
-        volume="+0%",
-        pitch="+0Hz",
+    subprocess.run(
+        ["espeak-ng", "-v", "ru", "-s", "132", "-a", "165", "-w", str(OUTPUT), text],
+        check=True,
     )
-    await voice.save(str(OUTPUT))
-    print(f"Russian narration generated successfully: {OUTPUT}")
+    if not OUTPUT.exists() or OUTPUT.stat().st_size < 1000:
+        raise SystemExit("TTS did not create a valid WAV file")
+    print(f"Russian narration generated successfully: {OUTPUT} ({OUTPUT.stat().st_size} bytes)")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
