@@ -83,7 +83,7 @@ export const NoInternetVideo: React.FC = () => {
   const caption = captions[captionIndex][Math.floor((frame%450)/90)] ?? '';
   const fade = interpolate(local,[0,18,sceneFrames-18,sceneFrames],[0,1,1,0],{extrapolateRight:'clamp'});
   return <AbsoluteFill style={{backgroundColor:'#101b32'}}>
-    <Audio src={staticFile('audio/narration.mp3')} />
+    <Audio src={staticFile('audio/narration.wav')} />
     {scenes.map((scene,i)=><Sequence key={scene.kind} from={i*sceneFrames} durationInFrames={sceneFrames}><Scene scene={scene} index={i}/></Sequence>)}
     <AbsoluteFill style={{justifyContent:'flex-end',alignItems:'center',paddingBottom:115,opacity:frame<6000?1:0}}>
       <div style={{fontFamily:'Arial,sans-serif',fontSize:34,fontWeight:700,color:'#fff',textShadow:'0 3px 14px #000',background:'rgba(9,17,30,.72)',padding:'16px 34px',borderRadius:12,maxWidth:1500,textAlign:'center'}}>{caption}</div>
