@@ -76,17 +76,17 @@ const Scene: React.FC<{scene:typeof scenes[number]; index:number}> = ({scene,ind
 
 export const NoInternetVideo: React.FC = () => {
   const frame = useCurrentFrame();
-  const sceneFrames = 450;
+  const sceneFrames = 630;
   const sceneIndex = Math.min(scenes.length-1,Math.floor(frame/sceneFrames));
   const local = frame%sceneFrames;
-  const captionIndex = Math.min(captions.length-1,Math.floor(frame/300));
-  const caption = captions[captionIndex][Math.floor((frame%300)/60)] ?? '';
+  const captionIndex = Math.min(captions.length-1,Math.floor(frame/450));
+  const caption = captions[captionIndex][Math.floor((frame%450)/90)] ?? '';
   const fade = interpolate(local,[0,18,sceneFrames-18,sceneFrames],[0,1,1,0],{extrapolateRight:'clamp'});
   return <AbsoluteFill style={{backgroundColor:'#101b32'}}>
     {scenes.map((scene,i)=><Sequence key={scene.kind} from={i*sceneFrames} durationInFrames={sceneFrames}><Scene scene={scene} index={i}/></Sequence>)}
-    <AbsoluteFill style={{justifyContent:'flex-end',alignItems:'center',paddingBottom:115,opacity:frame<4200?1:0}}>
+    <AbsoluteFill style={{justifyContent:'flex-end',alignItems:'center',paddingBottom:115,opacity:frame<6000?1:0}}>
       <div style={{fontFamily:'Arial,sans-serif',fontSize:34,fontWeight:700,color:'#fff',textShadow:'0 3px 14px #000',background:'rgba(9,17,30,.72)',padding:'16px 34px',borderRadius:12,maxWidth:1500,textAlign:'center'}}>{caption}</div>
     </AbsoluteFill>
-    <AbsoluteFill style={{backgroundColor:'#07101e',opacity:frame<30?interpolate(frame,[0,30],[1,0]):frame>4470?interpolate(frame,[4470,4500],[0,1]):0}}/>
+    <AbsoluteFill style={{backgroundColor:'#07101e',opacity:frame<30?interpolate(frame,[0,30],[1,0]):frame>6270?interpolate(frame,[6270,6300],[0,1]):0}}/>
   </AbsoluteFill>;
 };
