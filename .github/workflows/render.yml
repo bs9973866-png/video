@@ -1,0 +1,44 @@
+name: Render Remotion video
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "remotion.config.ts"
+      - ".github/workflows/render.yml"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Ensure Remotion browser
+        run: npx remotion browser ensure
+
+      - name: Render MP4
+        run: npm run build
+
+      - name: Upload rendered video
+        uses: actions/upload-artifact@v4
+        with:
+          name: no-internet-documentary
+          path: out/no-internet.mp4
+          if-no-files-found: error
+          retention-days: 7
