@@ -1,55 +1,119 @@
-import json, subprocess, urllib.request
+import asyncio
+import re
+import subprocess
+import tempfile
 from pathlib import Path
 
-root=Path(__file__).resolve().parents[1]
-audio=root/'public/audio'
-audio.mkdir(parents=True,exist_ok=True)
-voice='ru_RU-dmitri-medium'
-base='https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/dmitri/medium/'
-model=audio/f'{voice}.onnx'
-config=audio/f'{voice}.onnx.json'
-for name,path in [(f'{voice}.onnx',model),(f'{voice}.onnx.json',config)]:
-    if not path.exists():
-        print(f'Downloading Russian voice: {name}')
-        urllib.request.urlretrieve(base+name,path)
+import edge_tts
+from pydub import AudioSegment
 
-text=(root/'scripts/narration.txt').read_text(encoding='utf-8')
-raw=audio/'narration_raw.wav'
-final=audio/'narration.wav'
-subprocess.run(
-    ['piper','--model',str(model),'--config',str(config),'--output_file',str(raw)],
-    input=text,text=True,check=True
-)
+ROOT = Path(__file__).resolve().parents[1]
+AUDIO = ROOT / "public" / "audio"
+AUDIO.mkdir(parents=True, exist_ok=True)
+SOURCE = ROOT / "scripts" / "story.txt"
+OUTPUT = AUDIO / "narration.wav"
+SAMPLE_RATE = 24000
+TOTAL_SECONDS = 480.0
 
-def duration(path):
-    result=subprocess.run(
-        ['ffprobe','-v','error','-show_entries','format=duration',
-         '-of','default=noprint_wrappers=1:nokey=1',str(path)],
-        capture_output=True,text=True,check=True
-    )
-    return float(result.stdout.strip())
+# Two natural Russian neural voices, with small rate/pitch variations to distinguish speakers.
+VOICE = {
+    "ДИКТОР": ("ru-RU-DmitryNeural", "-8%", "-3Hz"),
+    "ТЫ": ("ru-RU-DmitryNeural", "+2%", "+1Hz"),
+    "ЛЁША": ("ru-RU-DmitryNeural", "+10%", "+5Hz"),
+    "ДАНЯ": ("ru-RU-DmitryNeural", "-2%", "+3Hz"),
+    "МИРА": ("ru-RU-SvetlanaNeural", "+3%", "+2Hz"),
+    "НОВОСТИ": ("ru-RU-SvetlanaNeural", "-7%", "-2Hz"),
+    "РАДИО": ("ru-RU-DmitryNeural", "-12%", "-5Hz"),
+}
 
-raw_duration=duration(raw)
-# Pitch shift is deliberately subtle; tempo is calculated so narration fits
-# the eight-minute picture instead of running over the ending.
-pitch_rate=0.96
-target_seconds=474.0
-tempo=raw_duration/(pitch_rate*target_seconds)
-tempo=max(0.85,min(1.50,tempo))
-print(f'Raw voice: {raw_duration:.1f}s; tempo factor: {tempo:.3f}')
-filters=(
-    f'asetrate=22050*{pitch_rate},aresample=22050,atempo={tempo:.5f},'
-    'equalizer=f=140:t=q:w=1:g=1.8,'
-    'equalizer=f=2800:t=q:w=1:g=1.2,'
-    'acompressor=threshold=-20dB:ratio=2:attack=15:release=120,'
-    'alimiter=limit=0.95,apad=pad_dur=6'
-)
-subprocess.run(
-    ['ffmpeg','-y','-i',str(raw),'-af',filters,'-t','480','-ar','22050',str(final)],
-    check=True
-)
-raw.unlink(missing_ok=True)
-final_duration=duration(final)
-print(f'Final narration: {final_duration:.1f}s (picture: 480.0s)')
-if final_duration < 470:
-    raise SystemExit(f'Narration is too short for the eight-minute film: {final_duration:.1f}s')
+def parse_story(text):
+    scenes = []
+    current = []
+    for line in text.splitlines():
+        if re.match(r"^##\s+\d+", line.strip()):
+            if current:
+                scenes.append(current)
+            current = []
+            continue
+        match = re.match(r"^\[([^]]+)\]\s*(.+)$", line.strip())
+        if match:
+            speaker, words = match.groups()
+            if speaker not in VOICE:
+                raise ValueError(f"Unknown speaker: {speaker}")
+            current.append((speaker, words.strip()))
+    if current:
+        scenes.append(current)
+    return scenes
+
+async def synthesize(speaker, text, path, semaphore):
+    voice, rate, pitch = VOICE[speaker]
+    async with semaphore:
+        last_error = None
+        for attempt in range(3):
+            try:
+                communicate = edge_tts.Communicate(
+                    text, voice, rate=rate, pitch=pitch,
+                    volume="+0%"
+                )
+                await communicate.save(str(path))
+                return
+            except Exception as exc:
+                last_error = exc
+                await asyncio.sleep(1.5 * (attempt + 1))
+        raise RuntimeError(f"TTS failed for {speaker}: {last_error}")
+
+async def main():
+    scenes = parse_story(SOURCE.read_text(encoding="utf-8"))
+    if len(scenes) != 36:
+        raise RuntimeError(f"Expected 36 story sections, got {len(scenes)}")
+    semaphore = asyncio.Semaphore(3)
+    with tempfile.TemporaryDirectory(prefix="film_tts_") as temp:
+        temp = Path(temp)
+        tasks = []
+        clip_paths = {}
+        n = 0
+        for scene_index, lines in enumerate(scenes):
+            for line_index, (speaker, words) in enumerate(lines):
+                path = temp / f"line_{n:03d}.mp3"
+                clip_paths[(scene_index, line_index)] = path
+                tasks.append(synthesize(speaker, words, path, semaphore))
+                n += 1
+        print(f"Generating {len(tasks)} neural dialogue/narrator lines...")
+        await asyncio.gather(*tasks)
+
+        scene_audio = []
+        slot_ms = int(TOTAL_SECONDS * 1000 / len(scenes))
+        for scene_index, lines in enumerate(scenes):
+            segment = AudioSegment.silent(duration=0, frame_rate=SAMPLE_RATE)
+            for line_index, (speaker, words) in enumerate(lines):
+                path = clip_paths[(scene_index, line_index)]
+                clip = AudioSegment.from_file(path, format="mp3").set_frame_rate(SAMPLE_RATE).set_channels(1)
+                # Keep dialogue natural, with a short pause between speakers.
+                segment += clip + AudioSegment.silent(duration=260, frame_rate=SAMPLE_RATE)
+            segment = segment.fade_in(35).fade_out(90)
+            if len(segment) > slot_ms:
+                raw = temp / f"scene_{scene_index:02d}_raw.wav"
+                sped = temp / f"scene_{scene_index:02d}_sped.wav"
+                segment.export(raw, format="wav")
+                factor = len(segment) / slot_ms
+                if factor > 1.28:
+                    raise RuntimeError(
+                        f"Section {scene_index+1} dialogue is too long ({factor:.2f}x); "
+                        "shorten dialogue rather than making voices unnaturally fast."
+                    )
+                subprocess.run([
+                    "ffmpeg", "-y", "-i", str(raw), "-af", f"atempo={factor:.5f}",
+                    "-t", f"{TOTAL_SECONDS/len(scenes):.4f}", str(sped)
+                ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                segment = AudioSegment.from_file(sped, format="wav").set_frame_rate(SAMPLE_RATE).set_channels(1)
+            segment += AudioSegment.silent(duration=max(0, slot_ms-len(segment)), frame_rate=SAMPLE_RATE)
+            scene_audio.append(segment[:slot_ms])
+            print(f"Scene {scene_index+1:02d}/{len(scenes)}: {len(segment)/1000:.1f}s")
+
+        final = sum(scene_audio, AudioSegment.empty())
+        final = final.set_frame_rate(SAMPLE_RATE).set_channels(1)
+        final.export(OUTPUT, format="wav", parameters=["-acodec", "pcm_s16le"])
+        print(f"Rendered multilingual-speaker Russian track: {OUTPUT} ({len(final)/1000:.1f}s)")
+
+if __name__ == "__main__":
+    asyncio.run(main())
